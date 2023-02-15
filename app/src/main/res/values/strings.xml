@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">testCrypto</string>
+    <string name="you_give_usdt">You give USDT:</string>
+    <string name="you_get_btc">You get BTC:</string>
+    <string name="exchange_rate">EXCHANGE RATE</string>
+    <string name="exchange">Exchange</string>
 </resources>

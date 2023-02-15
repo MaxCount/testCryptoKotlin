@@ -1,9 +1,13 @@
 package by.khomichenko.testcrypto
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.widget.TextView
+import android.widget.Toast
+import by.khomichenko.testcrypto.activities.BtcUsdtActivity
+import by.khomichenko.testcrypto.activities.UsdtBtcActivity
+import by.khomichenko.testcrypto.databinding.MainPageBinding
 import by.khomichenko.testcrypto.domain.models.pair.PairModel
 import retrofit2.Response
 import retrofit2.Call
@@ -14,11 +18,32 @@ import retrofit2.converter.gson.GsonConverterFactory
 const val BASE_URL = "https://api.wavesplatform.com"
 
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var binding: MainPageBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main_page)
 
         getData()
+
+        binding = MainPageBinding.inflate(layoutInflater)
+        val view = binding.root
+        setContentView(view)
+        binding.btnBtc.setOnClickListener {
+            Toast.makeText(this, "Button was clicked", Toast.LENGTH_SHORT).show()
+
+            val intentBtc = Intent(this, BtcUsdtActivity::class.java)
+            startActivity(intentBtc)
+
+
+        }
+        binding.btnUsdt.setOnClickListener {
+            Toast.makeText(this, "Button was clicked", Toast.LENGTH_SHORT).show()
+
+            val intentUsdt = Intent(this, UsdtBtcActivity::class.java)
+            startActivity(intentUsdt)
+        }
+
 
     }
 
@@ -31,15 +56,12 @@ class MainActivity : AppCompatActivity() {
 
         val retrofitData = retrofitBuilder.getExchangeRange()
 
-        retrofitData.enqueue(object : Callback<PairModel?> {
+        retrofitData.enqueue(object :Callback<PairModel?> {
             override fun onResponse(call: Call<PairModel?>, response: Response<PairModel?>) {
-
-                Log.d("MainActivity", "Status Code = " + response.code());
                 val responseBody = response.body()!!
-                val textView : TextView? = findViewById(R.id.txt)
+                val textView : TextView? = findViewById(R.id.rate)
 
-                    textView?.text = responseBody.data[0].data.lastPrice.toString()
-
+                textView?.text = responseBody.data[0].data.lastPrice.toString()
             }
 
             override fun onFailure(call: Call<PairModel?>, t: Throwable) {
