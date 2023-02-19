@@ -1,22 +1,19 @@
 package by.khomichenko.testcrypto
 
 import android.content.Intent
-import android.net.TrafficStats
 import android.os.Bundle
-import android.os.StrictMode
+import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import by.khomichenko.testcrypto.activities.BtcUsdtActivity
 import by.khomichenko.testcrypto.activities.UsdtBtcActivity
+import by.khomichenko.testcrypto.api.WavesApi
 import by.khomichenko.testcrypto.databinding.MainPageBinding
-import by.khomichenko.testcrypto.domain.models.pair.PairModel
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlinx.coroutines.*
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.net.ServerSocket
+import java.text.ParseException
 
 const val BASE_URL = "https://api.wavesplatform.com"
 var rateToken: String? = null
@@ -25,26 +22,29 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: MainPageBinding
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main_page)
-        StrictMode.enableDefaults()
-        getData()
+
+        try {
+            getData()
+        } catch (exception: ParseException){
+            Toast.makeText(this, "Error while parsing the data", Toast.LENGTH_LONG).show()
+        }
+
         binding = MainPageBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
         binding.btnBtc.setOnClickListener {
-            Toast.makeText(this, "Button was clicked", Toast.LENGTH_SHORT).show()
-
             val intentBtc = Intent(this, BtcUsdtActivity::class.java)
+            intentBtc.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
             intentBtc.putExtra("rate", rateToken)
             startActivity(intentBtc)
         }
         binding.btnUsdt.setOnClickListener {
-            Toast.makeText(this, "Button was clicked", Toast.LENGTH_SHORT).show()
-
             val intentUsdt = Intent(this, UsdtBtcActivity::class.java)
+            intentUsdt.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+            intentUsdt.putExtra("rate", rateToken)
             startActivity(intentUsdt)
         }
     }
@@ -55,21 +55,25 @@ class MainActivity : AppCompatActivity() {
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(WavesApi::class.java)
 
-        val retrofitData = retrofitBuilder.getExchangeRange()
+        val service = retrofitBuilder.create(WavesApi::class.java)
 
-        retrofitData.enqueue(object :Callback<PairModel?> {
-            override fun onResponse(call: Call<PairModel?>, response: Response<PairModel?>) {
-                val responseBody = response.body()!!
-                val textView : TextView? = findViewById(R.id.rate)
+        val coroutineExceptionHandler = CoroutineExceptionHandler { coroutineContext, throwable ->
+            Log.d("COROUTINES","Coroutine exception handled $throwable")
+        }
 
-                textView?.text = responseBody.data[0].data.lastPrice.toString()
-                rateToken = responseBody.data[0].data.lastPrice.toString()
+        CoroutineScope(Dispatchers.IO).launch(coroutineExceptionHandler) {
+            val response = service.getExchangeRange()
+            withContext(Dispatchers.Main) {
+                if (response.isSuccessful) {
+                    val items = response.body()
+                    if (items != null) {
+                        val textView : TextView? = findViewById(R.id.rate)
+                        textView?.text = items.data[0].data.lastPrice.toString()
+                        rateToken = items.data[0].data.lastPrice.toString()
+                    }
+                }
             }
-
-            override fun onFailure(call: Call<PairModel?>, t: Throwable) {
-            }
-        })
+        }
     }
 }

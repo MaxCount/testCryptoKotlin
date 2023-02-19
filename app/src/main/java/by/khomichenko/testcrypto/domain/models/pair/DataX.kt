@@ -1,7 +1,7 @@
 package by.khomichenko.testcrypto.domain.models.pair
 
 data class DataX(
-    val firstPrice: Int,
+    val firstPrice: Double,
     val high: Double,
     val lastPrice: Double,
     val low: Double,
